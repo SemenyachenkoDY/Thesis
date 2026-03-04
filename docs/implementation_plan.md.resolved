@@ -1,0 +1,291 @@
+# Next.js Migration — ИнвестПорт / Fast Sign
+
+## Контекст
+
+ВКР: прототип микросервиса Fast Sign для B2B-платформы **«ИнвестПорт»** (брокерский сценарий).  
+**Пресеты:** `DESIGN_VARIANCE: 9` | `MOTION_INTENSITY: 10` | `VISUAL_DENSITY: 5`
+
+---
+
+## 1. Профессиональная структура проекта
+
+Переносим весь проект в чистую структуру. Существующие файлы ([index.html](file:///c:/Users/%D0%94%D0%B0%D0%BD%D1%8F%20%D0%B8%20%D0%9C%D0%B0%D1%88%D0%B0/Downloads/%D0%94%D0%B8%D0%BF%D0%BB%D0%BE%D0%BC/WebAPP/index.html), [app.js](file:///c:/Users/%D0%94%D0%B0%D0%BD%D1%8F%20%D0%B8%20%D0%9C%D0%B0%D1%88%D0%B0/Downloads/%D0%94%D0%B8%D0%BF%D0%BB%D0%BE%D0%BC/WebAPP/app.js), [styles.css](file:///c:/Users/%D0%94%D0%B0%D0%BD%D1%8F%20%D0%B8%20%D0%9C%D0%B0%D1%88%D0%B0/Downloads/%D0%94%D0%B8%D0%BF%D0%BB%D0%BE%D0%BC/WebAPP/styles.css)) переходят в `legacy/`.
+
+```
+WebAPP/
+├── .gitignore
+├── README.md
+├── docker-compose.yml
+├── docs/
+│   ├── TASK.md                         ← ТЗ (перенос)
+│   ├── Task1.md                        ← Референсы (перенос)
+│   ├── DEPLOY.md                       ← Инструкция деплоя
+│   ├── images/                         ← Референс-скриншоты (перенос)
+│   ├── BPMN/                           ← BPMN-диаграммы (перенос)
+│   └── walkthroughs/                   ← Описания (перенос)
+│
+├── database/
+│   ├── schema.sql                      ← Все таблицы (CREATE TABLE)
+│   ├── seed.sql                        ← Тестовые данные (INSERT)
+│   └── superset/
+│       └── dashboards.md               ← Инструкция по дашбордам Superset
+│
+├── server/                             ← Backend (Express + PostgreSQL)
+│   ├── package.json
+│   ├── .env.example
+│   ├── src/
+│   │   ├── index.ts                    ← Точка входа
+│   │   ├── db.ts                       ← Pool подключения
+│   │   ├── routes/
+│   │   │   ├── documents.ts            ← CRUD документов
+│   │   │   ├── reports.ts              ← CRUD отчётов
+│   │   │   ├── corp-actions.ts         ← Корп. действия
+│   │   │   ├── taxes.ts                ← Налоги
+│   │   │   ├── margin-calls.ts         ← Маржин-колл
+│   │   │   ├── signing.ts              ← Подписание (Fast Sign)
+│   │   │   └── analytics.ts            ← KPI endpoints (для Superset)
+│   │   ├── services/
+│   │   │   ├── eventBus.ts             ← Публикация событий
+│   │   │   └── smsProvider.ts          ← Мок SMS-провайдер
+│   │   └── types.ts                    ← Типы (Document, Report, Event)
+│   ├── Dockerfile
+│   └── tsconfig.json
+│
+├── client/                             ← Frontend (Next.js 14)
+│   ├── package.json
+│   ├── next.config.ts
+│   ├── tailwind.config.ts
+│   ├── tsconfig.json
+│   ├── public/
+│   ├── src/
+│   │   ├── app/
+│   │   │   ├── layout.tsx
+│   │   │   ├── page.tsx                ← Портфель
+│   │   │   ├── documents/page.tsx      ← Документооборот (5 вкладок)
+│   │   │   ├── markets/page.tsx        ← Заглушка
+│   │   │   └── showcase/page.tsx       ← Заглушка
+│   │   ├── components/
+│   │   │   ├── layout/
+│   │   │   │   ├── Header.tsx
+│   │   │   │   ├── ProfileDropdown.tsx
+│   │   │   │   └── ThemeProvider.tsx
+│   │   │   ├── portfolio/
+│   │   │   │   ├── BalanceCard.tsx
+│   │   │   │   ├── OperationsCard.tsx
+│   │   │   │   ├── CurrencyTicker.tsx
+│   │   │   │   ├── FinancialGrid.tsx
+│   │   │   │   ├── ProductsCarousel.tsx
+│   │   │   │   ├── PortfolioTable.tsx
+│   │   │   │   └── modals/
+│   │   │   ├── documents/
+│   │   │   │   ├── DocumentsTab.tsx
+│   │   │   │   ├── ReportsTab.tsx
+│   │   │   │   ├── CorpActionsTab.tsx
+│   │   │   │   ├── TaxesTab.tsx
+│   │   │   │   ├── MarginCallTab.tsx
+│   │   │   │   └── SigningModal.tsx
+│   │   │   └── ui/
+│   │   │       ├── Modal.tsx
+│   │   │       ├── CustomSelect.tsx
+│   │   │       ├── Pagination.tsx
+│   │   │       ├── FilterPills.tsx
+│   │   │       └── SearchBar.tsx
+│   │   ├── lib/
+│   │   │   ├── api.ts                  ← fetch-обёртки к backend
+│   │   │   └── utils.ts
+│   │   └── data/
+│   │       └── mockData.ts             ← Мок (fallback если БД недоступна)
+│   └── Dockerfile
+│
+├── legacy/                             ← Старые файлы (для справки)
+│   ├── index.html
+│   ├── app.js
+│   ├── styles.css
+│   └── server.js
+│
+└── SKILLS/                             ← Дизайн-навыки (перенос)
+    └── taste-skills/SKILL.md
+```
+
+---
+
+## 2. База данных (PostgreSQL)
+
+### `database/schema.sql`
+
+```sql
+-- Клиенты
+CREATE TABLE clients (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    client_type VARCHAR(20) DEFAULT 'PHYSICAL', -- PHYSICAL / LEGAL
+    has_kep BOOLEAN DEFAULT false,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Документы (основная таблица Fast Sign)
+CREATE TABLE documents (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id),
+    title VARCHAR(500) NOT NULL,
+    doc_type VARCHAR(50) NOT NULL,         -- contract, application, agreement
+    status VARCHAR(30) DEFAULT 'CREATED',  -- CREATED, SIGNATURE_REQUESTED, SIGNED, FAILED, EXPIRED
+    scenario VARCHAR(10) DEFAULT 'TO_BE',  -- AS_IS / TO_BE
+    department VARCHAR(100),
+    sign_type VARCHAR(10),                 -- SMS / KEP
+    attempts INTEGER DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ,
+    processing_time_sec INTEGER
+);
+
+-- Отчёты
+CREATE TABLE reports (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id),
+    report_type VARCHAR(50) NOT NULL,      -- broker, depo, trade-day, deals
+    period_start DATE,
+    period_end DATE,
+    status VARCHAR(30) DEFAULT 'FORMING',  -- FORMING, FORMED, EXPIRED
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    formed_at TIMESTAMPTZ
+);
+
+-- Корпоративные действия
+CREATE TABLE corp_actions (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    action_type VARCHAR(20),               -- INTR, CAPG
+    status VARCHAR(30) DEFAULT 'NEW',
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Маржин-коллы
+CREATE TABLE margin_calls (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    title TEXT NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Налоговые периоды
+CREATE TABLE tax_records (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id),
+    tax_year INTEGER NOT NULL,
+    tax_base NUMERIC(15,2) DEFAULT 0,
+    to_pay NUMERIC(15,2) DEFAULT 0,
+    paid NUMERIC(15,2) DEFAULT 0,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Подписи
+CREATE TABLE signatures (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id),
+    sign_type VARCHAR(10) NOT NULL,
+    attempt_number INTEGER DEFAULT 1,
+    status VARCHAR(30) DEFAULT 'PENDING',
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    completed_at TIMESTAMPTZ
+);
+
+-- События (Event-Driven)
+CREATE TABLE events (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    entity_id UUID NOT NULL,
+    event_type VARCHAR(50) NOT NULL,
+    payload JSONB,
+    created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- Индексы
+CREATE INDEX idx_documents_status ON documents(status);
+CREATE INDEX idx_documents_created ON documents(created_at);
+CREATE INDEX idx_documents_scenario ON documents(scenario);
+CREATE INDEX idx_reports_status ON reports(status);
+CREATE INDEX idx_events_entity ON events(entity_id);
+CREATE INDEX idx_events_type ON events(event_type);
+```
+
+---
+
+## 3. Backend API (server/)
+
+Все CRUD-операции пишут в PostgreSQL. Frontend вызывает API.
+
+| Метод | Endpoint | Описание |
+|-------|----------|----------|
+| POST | `/api/documents` | Создать документ → INSERT в `documents` + event |
+| GET | `/api/documents` | Список документов (фильтры: status, type) |
+| POST | `/api/documents/:id/sign` | Инициировать подпись → INSERT в `signatures` |
+| POST | `/api/documents/:id/confirm` | Подтвердить SMS → UPDATE `documents.status` |
+| POST | `/api/reports` | Заказать отчёт → INSERT в `reports` |
+| GET | `/api/reports` | Список отчётов (фильтры) |
+| GET | `/api/corp-actions` | Корп. действия |
+| GET | `/api/taxes/:year` | Налоги за год |
+| GET | `/api/margin-calls` | Маржин-коллы |
+| GET | `/api/analytics/kpi` | KPI для Superset |
+| GET | `/api/health` | Health-check |
+
+---
+
+## 4. Apache Superset — дашборд
+
+> [!IMPORTANT]  
+> Аналитический дашборд полностью на Superset. В UI приложения — кнопка «Открыть дашборд», ведущая на Superset.
+
+На вкладке «Документы» внизу — кнопка/ссылка → `http://localhost:8088/dashboard/fast-sign/`
+
+Superset подключается к той же PostgreSQL, строит дашборд по таблицам `documents`, `signatures`, `events`.
+
+Файл `database/superset/dashboards.md` содержит SQL-запросы для создания чартов.
+
+---
+
+## 5. Frontend (client/) — Next.js 14
+
+### Интеграция с API
+
+`client/src/lib/api.ts`:
+- `fetchDocuments()`, `createDocument()`, [signDocument()](file:///c:/Users/%D0%94%D0%B0%D0%BD%D1%8F%20%D0%B8%20%D0%9C%D0%B0%D1%88%D0%B0/Downloads/%D0%94%D0%B8%D0%BF%D0%BB%D0%BE%D0%BC/WebAPP/app.js#373-374), `confirmSign()`
+- `fetchReports()`, [orderReport()](file:///c:/Users/%D0%94%D0%B0%D0%BD%D1%8F%20%D0%B8%20%D0%9C%D0%B0%D1%88%D0%B0/Downloads/%D0%94%D0%B8%D0%BF%D0%BB%D0%BE%D0%BC/WebAPP/app.js#424-455)
+- `fetchCorpActions()`, `fetchTaxes()`, `fetchMarginCalls()`
+- Fallback на `mockData.ts` если сервер недоступен (dev-режим)
+
+### Страницы и компоненты
+
+Полностью как в предыдущей версии плана:
+- Портфель (главная) — баланс, курсы, операции, портфель акций
+- Документооборот — 5 вкладок (все активные)
+- Рынки / Витрина — заглушки
+- Модалки: подписание, пополнение, перевод, вывод, аналитика
+- Профиль с дропдауном по скриншоту
+
+### Анимации (MOTION_INTENSITY: 10)
+
+Spring physics, stagger reveals, layout transitions, magnetic buttons, skeleton shimmer, page transitions.
+
+---
+
+## 6. .gitignore
+
+```
+node_modules/
+.next/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+Thumbs.db
+```
+
+---
+
+## Verification Plan
+
+1. `npm run build` — без ошибок в `client/` и `server/`
+2. `docker compose up` — все контейнеры запускаются
+3. API: POST/GET документов и отчётов пишут/читают из PostgreSQL
+4. UI: все 5 вкладок работают, подписание работает
+5. Superset: дашборд доступен и показывает данные

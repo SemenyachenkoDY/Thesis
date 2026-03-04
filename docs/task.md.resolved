@@ -1,0 +1,56 @@
+# Fast Sign — Next.js Migration
+
+## Phase 1: Project Restructure
+- [ ] Reorganize WebAPP into professional structure (client/server/database/docs/legacy)
+- [ ] Create .gitignore
+- [ ] Move existing files to legacy/ and docs/
+
+## Phase 2: Database
+- [ ] Write schema.sql (7 tables: clients, documents, reports, corp_actions, margin_calls, tax_records, signatures, events)
+- [ ] Write seed.sql with test data
+- [ ] Write Superset dashboards.md — SQL queries for analytics charts
+
+## Phase 3: Backend (server/)
+- [ ] Scaffold Express + TypeScript project
+- [ ] DB connection (pg Pool with .env)
+- [ ] Routes: documents CRUD, reports CRUD, corp-actions, taxes, margin-calls, signing, analytics
+- [ ] Event bus service (event logging)
+
+## Phase 4: Frontend Setup (client/)
+- [ ] Scaffold Next.js 14 with Tailwind + TypeScript
+- [ ] Install framer-motion, @phosphor-icons/react, recharts
+- [ ] Fonts (Outfit + JetBrains Mono), globals.css, dark theme
+
+## Phase 5: Layout & Navigation
+- [ ] Header (pill nav: Портфель/Рынки/Витрина/Документооборот)
+- [ ] Profile dropdown (ФИО, settings, theme toggle)
+- [ ] ThemeProvider
+
+## Phase 6: Portfolio Page
+- [ ] Balance + Operations + Promo cards
+- [ ] Currency ticker
+- [ ] Financial grid
+- [ ] Products carousel
+- [ ] Portfolio table (stocks)
+- [ ] Modals: Deposit, Transfer, Withdrawal, Analytics
+
+## Phase 7: Документооборот (5 tabs)
+- [ ] Documents tab + signing modal
+- [ ] Reports tab
+- [ ] Corp Actions tab
+- [ ] Taxes tab
+- [ ] Margin-call tab
+
+## Phase 8: Animations & Polish
+- [ ] Spring physics, stagger reveals, page transitions
+- [ ] Skeleton loading
+- [ ] Responsive
+
+## Phase 9: Docker + Superset
+- [ ] docker-compose.yml (PostgreSQL, server, client, Superset)
+- [ ] Verify full stack
+
+## Phase 10: Verification
+- [ ] Build passes
+- [ ] All pages render
+- [ ] Browser test

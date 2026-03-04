@@ -1,0 +1,252 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.25.0">
+  <process id="Process_AsIs" name="Подача заявки и подписание документа (As-Is)" isExecutable="false">
+    <laneSet id="LaneSet_1">
+      <lane id="Lane_CRM" name="CRM-система">
+        <flowNodeRef>UserTask_NotifyClient</flowNodeRef>
+        <flowNodeRef>UserTask_ManualUpdate</flowNodeRef>
+        <flowNodeRef>IntermediateCatchEvent_Timeout</flowNodeRef>
+      </lane>
+      <lane id="Lane_ESPService" name="Сервис ЭЦП">
+        <flowNodeRef>ServiceTask_ProcessRequest</flowNodeRef>
+        <flowNodeRef>SendTask_SendCallback</flowNodeRef>
+      </lane>
+      <lane id="Lane_IntegrationBus" name="Интеграционная шина">
+        <flowNodeRef>ServiceTask_RouteToESP</flowNodeRef>
+        <flowNodeRef>ReceiveTask_ReceiveCallback</flowNodeRef>
+        <flowNodeRef>ParallelGateway_1</flowNodeRef>
+        <flowNodeRef>ParallelGateway_2</flowNodeRef>
+      </lane>
+      <lane id="Lane_PersonalAccount" name="Личный кабинет">
+        <flowNodeRef>ServiceTask_FormFile</flowNodeRef>
+        <flowNodeRef>ServiceTask_AddClientDetails</flowNodeRef>
+        <flowNodeRef>SendTask_SendToESP</flowNodeRef>
+        <flowNodeRef>ServiceTask_UpdateStatus</flowNodeRef>
+      </lane>
+      <lane id="Lane_Client" name="Клиент">
+        <flowNodeRef>UserTask_RedirectToESP</flowNodeRef>
+        <flowNodeRef>UserTask_Authenticate</flowNodeRef>
+        <flowNodeRef>UserTask_SignDocument</flowNodeRef>
+        <flowNodeRef>UserTask_InitiateSigning</flowNodeRef>
+        <flowNodeRef>StartEvent_1</flowNodeRef>
+        <flowNodeRef>EndEvent_1</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_1" name="Начало процесса" />
+    <sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="UserTask_InitiateSigning" />
+    <userTask id="UserTask_InitiateSigning" name="Инициация подписания документа" />
+    <sequenceFlow id="Flow_2" sourceRef="UserTask_InitiateSigning" targetRef="ServiceTask_FormFile" />
+    <serviceTask id="ServiceTask_FormFile" name="Формирование файла" />
+    <sequenceFlow id="Flow_3" sourceRef="ServiceTask_FormFile" targetRef="ServiceTask_AddClientDetails" />
+    <serviceTask id="ServiceTask_AddClientDetails" name="Добавление реквизитов клиента" />
+    <sequenceFlow id="Flow_4" sourceRef="ServiceTask_AddClientDetails" targetRef="SendTask_SendToESP" />
+    <sendTask id="SendTask_SendToESP" name="Отправка в сервис ЭЦП" />
+    <sequenceFlow id="Flow_5" sourceRef="SendTask_SendToESP" targetRef="ServiceTask_RouteToESP" />
+    <serviceTask id="ServiceTask_RouteToESP" name="Маршрутизация в ЭЦП" />
+    <sequenceFlow id="Flow_6" sourceRef="ServiceTask_RouteToESP" targetRef="ServiceTask_ProcessRequest" />
+    <serviceTask id="ServiceTask_ProcessRequest" name="Обработка запроса ЭЦП" />
+    <sequenceFlow id="Flow_7" sourceRef="ServiceTask_ProcessRequest" targetRef="UserTask_RedirectToESP" />
+    <userTask id="UserTask_RedirectToESP" name="Перенаправление на портал ЭЦП" />
+    <sequenceFlow id="Flow_8" sourceRef="UserTask_RedirectToESP" targetRef="UserTask_Authenticate" />
+    <userTask id="UserTask_Authenticate" name="Аутентификация клиента" />
+    <sequenceFlow id="Flow_9" sourceRef="UserTask_Authenticate" targetRef="UserTask_SignDocument" />
+    <userTask id="UserTask_SignDocument" name="Подписание документа" />
+    <sequenceFlow id="Flow_10" sourceRef="UserTask_SignDocument" targetRef="SendTask_SendCallback" />
+    <sendTask id="SendTask_SendCallback" name="Отправка колбэка" />
+    <sequenceFlow id="Flow_11" sourceRef="SendTask_SendCallback" targetRef="ReceiveTask_ReceiveCallback" />
+    <receiveTask id="ReceiveTask_ReceiveCallback" name="Получение колбэка" />
+    <parallelGateway id="ParallelGateway_1" />
+    <sequenceFlow id="Flow_12" sourceRef="ReceiveTask_ReceiveCallback" targetRef="ParallelGateway_1" />
+    <sequenceFlow id="Flow_13" sourceRef="ParallelGateway_1" targetRef="ServiceTask_UpdateStatus" />
+    <serviceTask id="ServiceTask_UpdateStatus" name="Обновление статуса в ЛК" />
+    <sequenceFlow id="Flow_14" sourceRef="ParallelGateway_1" targetRef="IntermediateCatchEvent_Timeout" />
+    <intermediateCatchEvent id="IntermediateCatchEvent_Timeout" name="Сбой обратного вызова">
+      <timerEventDefinition>
+        <timeDuration>PT30M</timeDuration>
+      </timerEventDefinition>
+    </intermediateCatchEvent>
+    <sequenceFlow id="Flow_15" sourceRef="IntermediateCatchEvent_Timeout" targetRef="UserTask_ManualUpdate" />
+    <userTask id="UserTask_ManualUpdate" name="Ручное обновление данных" />
+    <sequenceFlow id="Flow_16" sourceRef="UserTask_ManualUpdate" targetRef="UserTask_NotifyClient" />
+    <userTask id="UserTask_NotifyClient" name="Уведомление клиента" />
+    <parallelGateway id="ParallelGateway_2" />
+    <sequenceFlow id="Flow_17" sourceRef="ServiceTask_UpdateStatus" targetRef="ParallelGateway_2" />
+    <sequenceFlow id="Flow_18" sourceRef="UserTask_NotifyClient" targetRef="ParallelGateway_2" />
+    <endEvent id="EndEvent_1" name="Завершение процесса" />
+    <sequenceFlow id="Flow_19" sourceRef="ParallelGateway_2" targetRef="EndEvent_1" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_AsIs">
+      <bpmndi:BPMNShape id="Lane_CRM_di" bpmnElement="Lane_CRM" isHorizontal="true">
+        <dc:Bounds x="160" y="680" width="2000" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_ESPService_di" bpmnElement="Lane_ESPService" isHorizontal="true">
+        <dc:Bounds x="160" y="530" width="2000" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_IntegrationBus_di" bpmnElement="Lane_IntegrationBus" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="2000" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PersonalAccount_di" bpmnElement="Lane_PersonalAccount" isHorizontal="true">
+        <dc:Bounds x="160" y="230" width="2000" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Client_di" bpmnElement="Lane_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="2000" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_FormFile_di" bpmnElement="ServiceTask_FormFile">
+        <dc:Bounds x="420" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_AddClientDetails_di" bpmnElement="ServiceTask_AddClientDetails">
+        <dc:Bounds x="560" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_SendToESP_di" bpmnElement="SendTask_SendToESP">
+        <dc:Bounds x="700" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_RouteToESP_di" bpmnElement="ServiceTask_RouteToESP">
+        <dc:Bounds x="840" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ProcessRequest_di" bpmnElement="ServiceTask_ProcessRequest">
+        <dc:Bounds x="980" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_RedirectToESP_di" bpmnElement="UserTask_RedirectToESP">
+        <dc:Bounds x="1060" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_Authenticate_di" bpmnElement="UserTask_Authenticate">
+        <dc:Bounds x="1210" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_SignDocument_di" bpmnElement="UserTask_SignDocument">
+        <dc:Bounds x="1360" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ReceiveTask_ReceiveCallback_di" bpmnElement="ReceiveTask_ReceiveCallback">
+        <dc:Bounds x="1560" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParallelGateway_1_di" bpmnElement="ParallelGateway_1">
+        <dc:Bounds x="1685" y="425" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_InitiateSigning_di" bpmnElement="UserTask_InitiateSigning">
+        <dc:Bounds x="310" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="222" y="122" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="195" y="158" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="2092" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="2077" y="94.5" width="65" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_UpdateStatus_di" bpmnElement="ServiceTask_UpdateStatus">
+        <dc:Bounds x="1800" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ParallelGateway_2_di" bpmnElement="ParallelGateway_2">
+        <dc:Bounds x="2085" y="425" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_NotifyClient_di" bpmnElement="UserTask_NotifyClient">
+        <dc:Bounds x="1930" y="688" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_SendCallback_di" bpmnElement="SendTask_SendCallback">
+        <dc:Bounds x="1450" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_ManualUpdate_di" bpmnElement="UserTask_ManualUpdate">
+        <dc:Bounds x="1780" y="688" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="IntermediateCatchEvent_Timeout_di" bpmnElement="IntermediateCatchEvent_Timeout">
+        <dc:Bounds x="1692" y="707" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1669" y="743" width="82" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="258" y="143" />
+        <di:waypoint x="310" y="143" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="410" y="150" />
+        <di:waypoint x="470" y="150" />
+        <di:waypoint x="470" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="520" y="300" />
+        <di:waypoint x="560" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="660" y="300" />
+        <di:waypoint x="700" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="800" y="305" />
+        <di:waypoint x="900" y="305" />
+        <di:waypoint x="900" y="410" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="910" y="490" />
+        <di:waypoint x="910" y="600" />
+        <di:waypoint x="980" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="1030" y="560" />
+        <di:waypoint x="1030" y="150" />
+        <di:waypoint x="1060" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="1160" y="150" />
+        <di:waypoint x="1210" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="1310" y="150" />
+        <di:waypoint x="1360" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1460" y="150" />
+        <di:waypoint x="1500" y="150" />
+        <di:waypoint x="1500" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1550" y="600" />
+        <di:waypoint x="1600" y="600" />
+        <di:waypoint x="1600" y="490" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1660" y="450" />
+        <di:waypoint x="1685" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1735" y="450" />
+        <di:waypoint x="1735" y="300" />
+        <di:waypoint x="1800" y="300" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1710" y="475" />
+        <di:waypoint x="1710" y="707" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1728" y="726" />
+        <di:waypoint x="1754" y="726" />
+        <di:waypoint x="1754" y="725" />
+        <di:waypoint x="1780" y="725" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1880" y="728" />
+        <di:waypoint x="1930" y="728" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_17_di" bpmnElement="Flow_17">
+        <di:waypoint x="1860" y="340" />
+        <di:waypoint x="1860" y="450" />
+        <di:waypoint x="2085" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_18_di" bpmnElement="Flow_18">
+        <di:waypoint x="2030" y="728" />
+        <di:waypoint x="2110" y="728" />
+        <di:waypoint x="2110" y="475" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_19_di" bpmnElement="Flow_19">
+        <di:waypoint x="2135" y="450" />
+        <di:waypoint x="2135" y="297" />
+        <di:waypoint x="2110" y="297" />
+        <di:waypoint x="2110" y="168" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>

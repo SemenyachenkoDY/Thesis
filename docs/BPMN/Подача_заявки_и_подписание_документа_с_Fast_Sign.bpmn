@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<definitions xmlns="http://www.omg.org/spec/BPMN/20100524/MODEL" xmlns:bpmndi="http://www.omg.org/spec/BPMN/20100524/DI" xmlns:dc="http://www.omg.org/spec/DD/20100524/DC" xmlns:di="http://www.omg.org/spec/DD/20100524/DI" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" id="Definitions_1" targetNamespace="http://bpmn.io/schema/bpmn" exporter="Camunda Modeler" exporterVersion="5.25.0">
+  <process id="Process_ToBe" name="Целевой процесс подписания документов (To-Be)" isExecutable="false">
+    <laneSet id="LaneSet_1">
+      <lane id="Lane_MessageBus" name="Шина сообщений">
+        <flowNodeRef>ServiceTask_ProcessSimpleSign</flowNodeRef>
+        <flowNodeRef>SendTask_SendToAnalytics</flowNodeRef>
+      </lane>
+      <lane id="Lane_FastSign" name="Микросервис Fast Sign">
+        <flowNodeRef>ServiceTask_ProcessKEP</flowNodeRef>
+        <flowNodeRef>ServiceTask_CheckCertificate</flowNodeRef>
+        <flowNodeRef>Gateway_JoinSign</flowNodeRef>
+        <flowNodeRef>ServiceTask_GenerateEvent</flowNodeRef>
+      </lane>
+      <lane id="Lane_DocService" name="DocService">
+        <flowNodeRef>ServiceTask_CreateDocument</flowNodeRef>
+        <flowNodeRef>ServiceTask_GenerateUUID</flowNodeRef>
+        <flowNodeRef>ServiceTask_SaveToStorage</flowNodeRef>
+      </lane>
+      <lane id="Lane_PersonalAccount" name="Личный кабинет 2.0">
+        <flowNodeRef>ServiceTask_SendToDocService</flowNodeRef>
+        <flowNodeRef>ServiceTask_NotifyClient</flowNodeRef>
+      </lane>
+      <lane id="Lane_Client" name="Клиент">
+        <flowNodeRef>UserTask_SelectSignMethod</flowNodeRef>
+        <flowNodeRef>UserTask_InitiateSigning</flowNodeRef>
+        <flowNodeRef>StartEvent_1</flowNodeRef>
+        <flowNodeRef>Gateway_SignMethod</flowNodeRef>
+        <flowNodeRef>EndEvent_1</flowNodeRef>
+      </lane>
+    </laneSet>
+    <startEvent id="StartEvent_1" name="Начало процесса" />
+    <sequenceFlow id="Flow_1" sourceRef="StartEvent_1" targetRef="UserTask_InitiateSigning" />
+    <userTask id="UserTask_InitiateSigning" name="Инициация подписания в ЛК 2.0">
+      <documentation>Клиент инициирует операцию через интерфейс Личного кабинета 2.0</documentation>
+    </userTask>
+    <sequenceFlow id="Flow_2" sourceRef="UserTask_InitiateSigning" targetRef="ServiceTask_SendToDocService" />
+    <serviceTask id="ServiceTask_SendToDocService" name="Формирование запроса в DocService">
+      <documentation>ЛК 2.0 формирует запрос в сервис документооборота DocService</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_3" sourceRef="ServiceTask_SendToDocService" targetRef="ServiceTask_CreateDocument" />
+    <serviceTask id="ServiceTask_CreateDocument" name="Создание шаблона документа">
+      <documentation>DocService создаёт шаблон документа</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_4" sourceRef="ServiceTask_CreateDocument" targetRef="ServiceTask_GenerateUUID" />
+    <serviceTask id="ServiceTask_GenerateUUID" name="Генерация UUID">
+      <documentation>Присвоение документу уникального идентификатора</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_5" sourceRef="ServiceTask_GenerateUUID" targetRef="ServiceTask_SaveToStorage" />
+    <serviceTask id="ServiceTask_SaveToStorage" name="Сохранение в защищённом хранилище">
+      <documentation>Документ сохраняется в защищённом хранилище</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_6" sourceRef="ServiceTask_SaveToStorage" targetRef="ServiceTask_NotifyClient" />
+    <serviceTask id="ServiceTask_NotifyClient" name="Уведомление клиента">
+      <documentation>DocService уведомляет клиента о готовности документа, отправляя ссылку для подписания</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_7" sourceRef="ServiceTask_NotifyClient" targetRef="UserTask_SelectSignMethod" />
+    <userTask id="UserTask_SelectSignMethod" name="Выбор метода подписи">
+      <documentation>После перехода по ссылке пользователь выбирает метод подписи</documentation>
+    </userTask>
+    <exclusiveGateway id="Gateway_SignMethod" name="Выбор метода" />
+    <sequenceFlow id="Flow_8" sourceRef="UserTask_SelectSignMethod" targetRef="Gateway_SignMethod" />
+    <sequenceFlow id="Flow_9" sourceRef="Gateway_SignMethod" targetRef="ServiceTask_CheckCertificate">
+      <conditionExpression xsi:type="tFormalExpression">${hasKEPCertificate == true}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="ServiceTask_CheckCertificate" name="Проверка сертификата КЭП">
+      <documentation>Проверка активности сертификата квалифицированной электронной подписи</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_10" sourceRef="ServiceTask_CheckCertificate" targetRef="ServiceTask_ProcessKEP" />
+    <serviceTask id="ServiceTask_ProcessKEP" name="Подписание КЭП через Fast Sign">
+      <documentation>Если у клиента активен сертификат КЭП, документ подписывается через Fast Sign</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_11" sourceRef="Gateway_SignMethod" targetRef="ServiceTask_ProcessSimpleSign">
+      <conditionExpression xsi:type="tFormalExpression">${hasKEPCertificate == false}</conditionExpression>
+    </sequenceFlow>
+    <serviceTask id="ServiceTask_ProcessSimpleSign" name="Подписание SMS-кодом">
+      <documentation>При отсутствии сертификата используется модуль SimpleSign с одноразовым SMS-кодом</documentation>
+    </serviceTask>
+    <parallelGateway id="Gateway_JoinSign" />
+    <sequenceFlow id="Flow_12" sourceRef="ServiceTask_ProcessKEP" targetRef="Gateway_JoinSign" />
+    <sequenceFlow id="Flow_13" sourceRef="ServiceTask_ProcessSimpleSign" targetRef="Gateway_JoinSign" />
+    <sequenceFlow id="Flow_14" sourceRef="Gateway_JoinSign" targetRef="ServiceTask_GenerateEvent" />
+    <serviceTask id="ServiceTask_GenerateEvent" name="Генерация события DocumentSigned">
+      <documentation>После успешного завершения операции микросервис формирует событие DocumentSigned</documentation>
+    </serviceTask>
+    <sequenceFlow id="Flow_15" sourceRef="ServiceTask_GenerateEvent" targetRef="SendTask_SendToAnalytics" />
+    <sendTask id="SendTask_SendToAnalytics" name="Отправка в шину сообщений">
+      <documentation>Событие передаётся в шину сообщений и поступает в аналитический сервис</documentation>
+    </sendTask>
+    <sequenceFlow id="Flow_16" sourceRef="SendTask_SendToAnalytics" targetRef="EndEvent_1" />
+    <endEvent id="EndEvent_1" name="Документ подписан" />
+  </process>
+  <bpmndi:BPMNDiagram id="BPMNDiagram_1">
+    <bpmndi:BPMNPlane id="BPMNPlane_1" bpmnElement="Process_ToBe">
+      <bpmndi:BPMNShape id="Lane_MessageBus_di" bpmnElement="Lane_MessageBus" isHorizontal="true">
+        <dc:Bounds x="160" y="680" width="1600" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_FastSign_di" bpmnElement="Lane_FastSign" isHorizontal="true">
+        <dc:Bounds x="160" y="530" width="1600" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_DocService_di" bpmnElement="Lane_DocService" isHorizontal="true">
+        <dc:Bounds x="160" y="380" width="1600" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_PersonalAccount_di" bpmnElement="Lane_PersonalAccount" isHorizontal="true">
+        <dc:Bounds x="160" y="230" width="1600" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Lane_Client_di" bpmnElement="Lane_Client" isHorizontal="true">
+        <dc:Bounds x="160" y="80" width="1600" height="150" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SendToDocService_di" bpmnElement="ServiceTask_SendToDocService">
+        <dc:Bounds x="420" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CreateDocument_di" bpmnElement="ServiceTask_CreateDocument">
+        <dc:Bounds x="560" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_GenerateUUID_di" bpmnElement="ServiceTask_GenerateUUID">
+        <dc:Bounds x="700" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_SaveToStorage_di" bpmnElement="ServiceTask_SaveToStorage">
+        <dc:Bounds x="840" y="410" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_SelectSignMethod_di" bpmnElement="UserTask_SelectSignMethod">
+        <dc:Bounds x="760" y="110" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="UserTask_InitiateSigning_di" bpmnElement="UserTask_InitiateSigning">
+        <dc:Bounds x="310" y="115" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="StartEvent_1_di" bpmnElement="StartEvent_1">
+        <dc:Bounds x="210" y="130" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="183" y="166" width="90" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_NotifyClient_di" bpmnElement="ServiceTask_NotifyClient">
+        <dc:Bounds x="840" y="260" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_SignMethod_di" bpmnElement="Gateway_SignMethod" isMarkerVisible="true">
+        <dc:Bounds x="955" y="125" width="50" height="50" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="943" y="101" width="74" height="14" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ProcessKEP_di" bpmnElement="ServiceTask_ProcessKEP">
+        <dc:Bounds x="1160" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_CheckCertificate_di" bpmnElement="ServiceTask_CheckCertificate">
+        <dc:Bounds x="930" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_ProcessSimpleSign_di" bpmnElement="ServiceTask_ProcessSimpleSign">
+        <dc:Bounds x="1030" y="710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="Gateway_JoinSign_di" bpmnElement="Gateway_JoinSign">
+        <dc:Bounds x="1295" y="575" width="50" height="50" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="ServiceTask_GenerateEvent_di" bpmnElement="ServiceTask_GenerateEvent">
+        <dc:Bounds x="1400" y="560" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="SendTask_SendToAnalytics_di" bpmnElement="SendTask_SendToAnalytics">
+        <dc:Bounds x="1540" y="710" width="100" height="80" />
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNShape id="EndEvent_1_di" bpmnElement="EndEvent_1">
+        <dc:Bounds x="1572" y="132" width="36" height="36" />
+        <bpmndi:BPMNLabel>
+          <dc:Bounds x="1565" y="94.5" width="49" height="27" />
+        </bpmndi:BPMNLabel>
+      </bpmndi:BPMNShape>
+      <bpmndi:BPMNEdge id="Flow_1_di" bpmnElement="Flow_1">
+        <di:waypoint x="246" y="151" />
+        <di:waypoint x="278" y="151" />
+        <di:waypoint x="278" y="148" />
+        <di:waypoint x="310" y="148" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_2_di" bpmnElement="Flow_2">
+        <di:waypoint x="410" y="155" />
+        <di:waypoint x="470" y="155" />
+        <di:waypoint x="470" y="260" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_3_di" bpmnElement="Flow_3">
+        <di:waypoint x="470" y="340" />
+        <di:waypoint x="470" y="450" />
+        <di:waypoint x="560" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_4_di" bpmnElement="Flow_4">
+        <di:waypoint x="660" y="450" />
+        <di:waypoint x="700" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_5_di" bpmnElement="Flow_5">
+        <di:waypoint x="800" y="450" />
+        <di:waypoint x="840" y="450" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_6_di" bpmnElement="Flow_6">
+        <di:waypoint x="890" y="410" />
+        <di:waypoint x="890" y="340" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_7_di" bpmnElement="Flow_7">
+        <di:waypoint x="840" y="310" />
+        <di:waypoint x="800" y="310" />
+        <di:waypoint x="800" y="190" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_8_di" bpmnElement="Flow_8">
+        <di:waypoint x="860" y="150" />
+        <di:waypoint x="955" y="150" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_9_di" bpmnElement="Flow_9">
+        <di:waypoint x="979" y="174" />
+        <di:waypoint x="980" y="560" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_10_di" bpmnElement="Flow_10">
+        <di:waypoint x="1030" y="600" />
+        <di:waypoint x="1160" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_11_di" bpmnElement="Flow_11">
+        <di:waypoint x="1005" y="150" />
+        <di:waypoint x="1070" y="150" />
+        <di:waypoint x="1070" y="710" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_12_di" bpmnElement="Flow_12">
+        <di:waypoint x="1260" y="600" />
+        <di:waypoint x="1295" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_13_di" bpmnElement="Flow_13">
+        <di:waypoint x="1130" y="750" />
+        <di:waypoint x="1320" y="750" />
+        <di:waypoint x="1320" y="625" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_14_di" bpmnElement="Flow_14">
+        <di:waypoint x="1345" y="600" />
+        <di:waypoint x="1400" y="600" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_15_di" bpmnElement="Flow_15">
+        <di:waypoint x="1450" y="640" />
+        <di:waypoint x="1450" y="750" />
+        <di:waypoint x="1540" y="750" />
+      </bpmndi:BPMNEdge>
+      <bpmndi:BPMNEdge id="Flow_16_di" bpmnElement="Flow_16">
+        <di:waypoint x="1590" y="710" />
+        <di:waypoint x="1590" y="168" />
+      </bpmndi:BPMNEdge>
+    </bpmndi:BPMNPlane>
+  </bpmndi:BPMNDiagram>
+</definitions>
