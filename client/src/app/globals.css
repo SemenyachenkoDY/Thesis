@@ -1,0 +1,99 @@
+@import "tailwindcss";
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+  --font-sans: "Outfit", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  --accent: #22c55e;
+  --accent-hover: #16a34a;
+  --accent-muted: rgba(34, 197, 94, 0.15);
+  --danger: #ef4444;
+  --warning: #f59e0b;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --radius-lg: 16px;
+  --transition: 200ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ===== DARK THEME (default) ===== */
+[data-theme="dark"] {
+  --bg-primary: #09090b;
+  --bg-secondary: #18181b;
+  --bg-tertiary: #27272a;
+  --bg-elevated: #1c1c1f;
+  --border: #2e2e33;
+  --border-hover: #3f3f46;
+  --text-primary: #fafafa;
+  --text-secondary: #a1a1aa;
+  --text-tertiary: #71717a;
+  --glass-bg: rgba(24, 24, 27, 0.8);
+  --glass-border: rgba(255, 255, 255, 0.06);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+}
+
+/* ===== LIGHT THEME ===== */
+[data-theme="light"] {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f4f4f5;
+  --bg-tertiary: #e4e4e7;
+  --bg-elevated: #ffffff;
+  --border: #d4d4d8;
+  --border-hover: #a1a1aa;
+  --text-primary: #09090b;
+  --text-secondary: #52525b;
+  --text-tertiary: #71717a;
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+}
+
+/* ===== BASE ===== */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  font-family: var(--font-sans);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+*, *::before, *::after {
+  border-color: var(--border);
+}
+
+/* ===== SCROLLBAR ===== */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
+::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+
+/* ===== GLASS ===== */
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+/* ===== SKELETON ===== */
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+.skeleton {
+  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border) 50%, var(--bg-tertiary) 75%);
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ===== UTILITIES ===== */
+.text-accent { color: var(--accent); }
+.bg-accent { background: var(--accent); }
+.text-danger { color: var(--danger); }
+.text-secondary { color: var(--text-secondary); }
+.text-tertiary { color: var(--text-tertiary); }
+.font-mono { font-family: var(--font-mono); }
