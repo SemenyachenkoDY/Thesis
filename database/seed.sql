@@ -8,9 +8,9 @@ INSERT INTO clients (id, name, client_type, contract_number, has_kep) VALUES
 
 -- Группа документов №765934
 INSERT INTO documents (id, client_id, group_id, title, doc_type, status, scenario, created_at) VALUES
-  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'g0000001-0000-0000-0000-000000765934', 'Уведомление о конфликте интересов', 'notification', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03'),
-  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'g0000001-0000-0000-0000-000000765934', 'Уведомление о конфликте интересов', 'notification', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03'),
-  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'g0000001-0000-0000-0000-000000765934', 'Поручение на сделку ОТС (Произвольный документ)', 'order', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03');
+  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'a0000001-0000-0000-0000-000000765934', 'Уведомление о конфликте интересов', 'notification', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03'),
+  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'a0000001-0000-0000-0000-000000765934', 'Уведомление о конфликте интересов', 'notification', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03'),
+  (gen_random_uuid(), 'a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'a0000001-0000-0000-0000-000000765934', 'Поручение на сделку ОТС (Произвольный документ)', 'order', 'SIGNATURE_REQUESTED', 'TO_BE', '2026-02-02 16:10:00+03');
 
 -- Другие документы
 INSERT INTO documents (id, client_id, title, doc_type, status, scenario, created_at) VALUES
