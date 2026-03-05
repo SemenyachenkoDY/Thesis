@@ -17,34 +17,34 @@
 
 /* ===== DARK THEME (default) ===== */
 [data-theme="dark"] {
-  --bg-primary: #09090b;
-  --bg-secondary: #18181b;
-  --bg-tertiary: #27272a;
-  --bg-elevated: #1c1c1f;
-  --border: #2e2e33;
-  --border-hover: #3f3f46;
-  --text-primary: #fafafa;
-  --text-secondary: #a1a1aa;
-  --text-tertiary: #71717a;
-  --glass-bg: rgba(24, 24, 27, 0.8);
-  --glass-border: rgba(255, 255, 255, 0.06);
+  --bg-primary: #09090b; /* zinc-950 */
+  --bg-secondary: #18181b; /* zinc-900 */
+  --bg-tertiary: #27272a; /* zinc-800 */
+  --bg-elevated: #18181b;
+  --border: #3f3f46; /* zinc-700 */
+  --border-hover: #52525b; /* zinc-600 */
+  --text-primary: #ffffff; /* pure white for max contrast */
+  --text-secondary: #a1a1aa; /* zinc-400 */
+  --text-tertiary: #71717a; /* zinc-500 */
+  --glass-bg: rgba(24, 24, 27, 0.85);
+  --glass-border: rgba(255, 255, 255, 0.08);
   --shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
 }
 
 /* ===== LIGHT THEME ===== */
 [data-theme="light"] {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f4f4f5;
-  --bg-tertiary: #e4e4e7;
+  --bg-primary: #fafafa; /* zinc-50 */
+  --bg-secondary: #ffffff; /* pure white */
+  --bg-tertiary: #f4f4f5; /* zinc-100 */
   --bg-elevated: #ffffff;
-  --border: #d4d4d8;
-  --border-hover: #a1a1aa;
-  --text-primary: #09090b;
-  --text-secondary: #52525b;
-  --text-tertiary: #71717a;
-  --glass-bg: rgba(255, 255, 255, 0.8);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+  --border: #e4e4e7; /* zinc-200 */
+  --border-hover: #d4d4d8; /* zinc-300 */
+  --text-primary: #09090b; /* zinc-950 highest contrast */
+  --text-secondary: #52525b; /* zinc-600 */
+  --text-tertiary: #81818a; /* zinc-500 equivalent */
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.05);
+  --shadow: 0 8px 30px rgba(0, 0, 0, 0.06);
 }
 
 /* ===== BASE ===== */
@@ -60,15 +60,27 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   border-color: var(--border);
 }
 
 /* ===== SCROLLBAR ===== */
-::-webkit-scrollbar { width: 6px; height: 6px; }
-::-webkit-scrollbar-track { background: transparent; }
-::-webkit-scrollbar-thumb { background: var(--border); border-radius: 999px; }
-::-webkit-scrollbar-thumb:hover { background: var(--border-hover); }
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--border-hover);
+}
 
 /* ===== GLASS ===== */
 .glass {
@@ -80,20 +92,41 @@ body {
 
 /* ===== SKELETON ===== */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+  100% {
+    background-position: 200% 0;
+  }
 }
 .skeleton {
-  background: linear-gradient(90deg, var(--bg-tertiary) 25%, var(--border) 50%, var(--bg-tertiary) 75%);
+  background: linear-gradient(
+    90deg,
+    var(--bg-tertiary) 25%,
+    var(--border) 50%,
+    var(--bg-tertiary) 75%
+  );
   background-size: 200% 100%;
   animation: shimmer 1.5s ease-in-out infinite;
   border-radius: var(--radius-sm);
 }
 
 /* ===== UTILITIES ===== */
-.text-accent { color: var(--accent); }
-.bg-accent { background: var(--accent); }
-.text-danger { color: var(--danger); }
-.text-secondary { color: var(--text-secondary); }
-.text-tertiary { color: var(--text-tertiary); }
-.font-mono { font-family: var(--font-mono); }
+.text-accent {
+  color: var(--accent);
+}
+.bg-accent {
+  background: var(--accent);
+}
+.text-danger {
+  color: var(--danger);
+}
+.text-secondary {
+  color: var(--text-secondary);
+}
+.text-tertiary {
+  color: var(--text-tertiary);
+}
+.font-mono {
+  font-family: var(--font-mono);
+}

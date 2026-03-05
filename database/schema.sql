@@ -6,6 +6,9 @@
 CREATE TABLE IF NOT EXISTS clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
+    email VARCHAR(255) UNIQUE,
+    password_hash VARCHAR(255),
+    phone VARCHAR(50),
     client_type VARCHAR(20) DEFAULT 'PHYSICAL',
     contract_number VARCHAR(50),
     has_kep BOOLEAN DEFAULT false,
@@ -110,3 +113,13 @@ CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
 CREATE INDEX IF NOT EXISTS idx_corp_actions_type ON corp_actions(action_type);
 CREATE INDEX IF NOT EXISTS idx_margin_calls_created ON margin_calls(created_at);
+
+-- Обращения в поддержку (Table 5 в дипломе)
+CREATE TABLE IF NOT EXISTS support_requests (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    document_id UUID REFERENCES documents(id) ON DELETE CASCADE,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    resolved BOOLEAN DEFAULT false
+);
+
+CREATE INDEX IF NOT EXISTS idx_support_requests_doc ON support_requests(document_id);

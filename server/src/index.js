@@ -21,6 +21,7 @@ app.get('/api/health', async (req, res) => {
 });
 
 // Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/documents', require('./routes/documents'));
 app.use('/api/documents', require('./routes/signing'));
 app.use('/api/reports', require('./routes/reports'));

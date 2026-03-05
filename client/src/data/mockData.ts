@@ -31,14 +31,18 @@ export const currencies = [
 ];
 
 export const stocks = [
-  { ticker: 'GAZP', name: 'ГАЗПРОМ ао', qty: 20, buyPrice: 126.02, currentPrice: 128.16, value: 2563.2, pnl: -3709, pnlPercent: -59.13, color: '#3B82F6' },
-  { ticker: 'VTBR', name: 'ВТБ ао', qty: 11, buyPrice: 87.47, currentPrice: 84.065, value: 924.72, pnl: -37.5, pnlPercent: -3.9, color: '#1E40AF' },
-  { ticker: 'TGKN', name: 'ТГК-14', qty: 100000, buyPrice: 0.00662, currentPrice: 0.00623, value: 623, pnl: -39, pnlPercent: -5.89, color: '#10B981' },
-  { ticker: 'HYDR', name: 'РусГидро-1-ао', qty: -3000, buyPrice: 0.44638, currentPrice: 0.4434, value: -1330.2, pnl: 8.94, pnlPercent: 0.67, color: '#0EA5E9' },
-  { ticker: 'VKCO', name: 'VK-гдр', qty: 2, buyPrice: 308.85, currentPrice: 303.2, value: 606.4, pnl: -11.3, pnlPercent: -1.83, color: '#6366F1' },
-  { ticker: 'SGZH', name: 'Сегежа', qty: 100, buyPrice: 1.24, currentPrice: 1.269, value: 126.9, pnl: 3, pnlPercent: 2.42, color: '#84CC16' },
-  { ticker: 'GECO', name: 'ГЕНЕТИКО', qty: 20, buyPrice: 24.9, currentPrice: 24.23, value: 484.6, pnl: -13.3, pnlPercent: -2.67, color: '#F43F5E' },
-  { ticker: 'GAZP_R', name: 'ГАЗПРОМ ао Репо', qty: 30, buyPrice: 132.44, currentPrice: 128.16, value: 3844.8, pnl: 0, pnlPercent: 0, color: '#3B82F6' },
+  { ticker: 'GAZP', name: 'ГАЗПРОМ ао', type: 'Акции', qty: 10, buyPrice: 126.99, currentPrice: 127.64, value: 1276.4, pnl: 6.5, pnlPercent: 0.51, color: '#3B82F6' },
+  { ticker: 'VTBR', name: 'ВТБ ао', type: 'Акции', qty: 9, buyPrice: 87.7, currentPrice: 86.14, value: 775.26, pnl: -14.01, pnlPercent: -1.77, color: '#1E40AF' },
+  { ticker: 'TGKN', name: 'ТГК-14', type: 'Акции', qty: 100000, buyPrice: 0.00662, currentPrice: 0.00634, value: 634, pnl: -28, pnlPercent: -4.23, color: '#10B981' },
+  { ticker: 'HYDR', name: 'РусГидро-1-ао', type: 'Акции', qty: -3000, buyPrice: 0.44375, currentPrice: 0.4405, value: -1321.5, pnl: 9.75, pnlPercent: 0.73, color: '#0EA5E9' },
+  { ticker: 'SGZH', name: 'Сегежа', type: 'Акции', qty: 100, buyPrice: 1.24, currentPrice: 1.2255, value: 122.55, pnl: -1.35, pnlPercent: -1.09, color: '#84CC16' },
+  { ticker: 'GECO', name: 'ГЕНЕТИКО', type: 'Акции', qty: 20, buyPrice: 24.9, currentPrice: 24.3, value: 486, pnl: -11.9, pnlPercent: -2.39, color: '#F43F5E' },
+  
+  { ticker: 'RU000A10CL64', name: 'Сегежа ЗР7R', type: 'Облигации', qty: 2, buyPrice: 95.5, currentPrice: 96.83, value: 2207.72, pnl: 63.12, pnlPercent: 2.94, color: '#6B7280', nkd: 8.77, coupon: 1.07 },
+  { ticker: 'RU000A10A794', name: 'Автом01CNY', type: 'Облигации', qty: 1, buyPrice: 106.09, currentPrice: 104.9, value: 1195.86, pnl: 3.36, pnlPercent: 0.28, color: '#9CA3AF', nkd: 1.35, coupon: 5.24 },
+
+  { ticker: 'NGM-3.26', name: 'Фьючерс Natural Gas', type: 'Фьючерсы', qty: 1, buyPrice: 3.01, currentPrice: 2.996, value: 234.26, pnl: -1.09, pnlPercent: -0.46, color: '#14B8A6', go: 115.07, margin: -1.09 },
+  { ticker: 'SiZ6', name: 'Фьючерс USD/RUB', type: 'Фьючерсы', qty: 2, buyPrice: 78000, currentPrice: 78150, value: 156300, pnl: 300, pnlPercent: 0.38, color: '#38BDF8', go: 8400.5, margin: 300 },
 ];
 
 export const products = [
@@ -131,4 +135,18 @@ export const analyticsComposition = [
   { name: 'Валюты', value: 45.18, color: '#EC4899' },
   { name: 'Фонды', value: 10.7, color: '#3B82F6' },
   { name: 'Денежные средства', value: 13.34, color: '#14B8A6' },
+];
+
+export const portfolioEvents = [
+  { id: 'e-1', dateGroup: 'Сегодня', title: 'Комиссия по сделке: Продажа ЦБ на бирже 1шт. ВТБ ао', ticker: 'VTBR', value: -0.01, isPositive: null },
+  { id: 'e-2', dateGroup: 'Сегодня', title: 'Продажа 1 инструмента Акции ВТБ ао по цене 85 ₽', ticker: 'VTBR', value: 85, isPositive: true },
+  { id: 'e-3', dateGroup: 'Сегодня', title: 'Продажа РЕПО 3 000 инструментов Акции РусГидро-1-ао по цене 0,44375 ₽', ticker: 'HYDR', value: 1331.25, isPositive: true },
+  { id: 'e-4', dateGroup: 'Сегодня', title: 'Покупка РЕПО 3 000 инструментов Акции РусГидро-1-ао по цене 0,44375 ₽', ticker: 'HYDR', value: -1331.25, isPositive: false },
+  { id: 'e-5', dateGroup: 'Вчера', title: 'Покупка 1 инструмента Паи WIMM ETF по цене 1,94 ₽', ticker: 'LQDT', value: -1.94, isPositive: false },
+];
+
+export const portfolioOrders = [
+  { id: 'o-1', dateGroup: 'Сегодня', title: 'Продажа по рыночной', ticker: 'VTBR', status: 'Исполнена', qty: 1, price: 85, value: 85 },
+  { id: 'o-2', dateGroup: 'Сегодня', title: 'Продажа лимитная', ticker: 'HYDR', status: 'Отменена', qty: 3000, price: 0.45, value: 1350 },
+  { id: 'o-3', dateGroup: 'Вчера', title: 'Покупка лимитная', ticker: 'LQDT', status: 'Исполнена', qty: 1, price: 1.94, value: -1.94 },
 ];

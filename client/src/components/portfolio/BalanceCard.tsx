@@ -1,14 +1,34 @@
 'use client';
 
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { portfolio, user } from '@/data/mockData';
-import { ChartPie } from '@phosphor-icons/react';
+import { ChartPie, CaretDown, Check } from '@phosphor-icons/react';
+import { useState, useRef, useEffect } from 'react';
 
 interface Props {
   onAnalyticsOpen: () => void;
 }
 
 export default function BalanceCard({ onAnalyticsOpen }: Props) {
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [activeAccount, setActiveAccount] = useState(user.contract);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  
+  const accounts = [
+    { id: user.contract, name: 'Брокерский счет', value: 64096.32 },
+    { id: 'IIS-99120', name: 'ИИС', value: 125000.00 },
+  ];
+
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setDropdownOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const fmt = (n: number) => n.toLocaleString('ru-RU', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
   return (
@@ -25,10 +45,45 @@ export default function BalanceCard({ onAnalyticsOpen }: Props) {
         </span>
       </div>
 
-      <div className="flex items-center gap-2 mb-1">
-        <span className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-          {user.contract} · Весь портфель
-        </span>
+      {/* Portfolio Switcher */}
+      <div className="relative mb-2" ref={dropdownRef}>
+        <button
+          onClick={() => setDropdownOpen(!dropdownOpen)}
+          className="flex items-center gap-2 group"
+        >
+          <span className="text-sm font-semibold transition-colors group-hover:text-[var(--text-primary)]" style={{ color: 'var(--text-secondary)' }}>
+            {accounts.find(a => a.id === activeAccount)?.name || 'Брокерский счет'} · {activeAccount}
+          </span>
+          <CaretDown size={14} weight="bold" className="transition-transform duration-200" style={{ transform: dropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)', color: 'var(--text-tertiary)' }} />
+        </button>
+
+        <AnimatePresence>
+          {dropdownOpen && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: -5 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.95, y: -5 }}
+              transition={{ duration: 0.15 }}
+              className="absolute top-full left-0 mt-2 w-64 rounded-xl shadow-lg border z-50 overflow-hidden"
+              style={{ background: 'var(--bg-elevated)', border: '1px solid var(--border)' }}
+            >
+              {accounts.map(acc => (
+                <div
+                  key={acc.id}
+                  onClick={() => { setActiveAccount(acc.id); setDropdownOpen(false); }}
+                  className="flex items-center justify-between px-4 py-3 cursor-pointer transition-colors hover:bg-[var(--bg-secondary)]"
+                >
+                  <div>
+                    <p className="text-sm font-semibold" style={{ color: 'var(--text-primary)' }}>{acc.name}</p>
+                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>{acc.id}</p>
+                  </div>
+                  <div className="flex flex-col items-end">
+                     <span className="text-sm font-mono font-bold" style={{ color: 'var(--text-primary)' }}>{fmt(acc.value)} ₽</span>
+                     {activeAccount === acc.id && <Check size={14} weight="bold" className="text-accent mt-0.5" />}
+                  </div>
+                </div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
 
       <motion.p

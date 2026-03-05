@@ -1,9 +1,11 @@
 'use client';
 
+import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from './ThemeProvider';
 import { user } from '@/data/mockData';
 import { User, GearSix, Question, SignOut, Moon, Sun } from '@phosphor-icons/react';
+import SettingsModal from './profile/SettingsModal';
 
 interface Props {
   isOpen: boolean;
@@ -18,9 +20,21 @@ const menuItems = [
 
 export default function ProfileDropdown({ isOpen, onClose }: Props) {
   const { theme, toggleTheme } = useTheme();
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      // In a real app, you would also clear cookies/localStorage here
+      window.location.href = '/'; 
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   return (
-    <AnimatePresence>
+    <>
+      <SettingsModal isOpen={isSettingsOpen} onClose={() => setIsSettingsOpen(false)} />
+      <AnimatePresence>
       {isOpen && (
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: -8 }}
@@ -61,20 +75,42 @@ export default function ProfileDropdown({ isOpen, onClose }: Props) {
 
           {/* Menu Items */}
           <div className="py-2">
-            {menuItems.map((item, i) => (
-              <motion.button
-                key={item.label}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: 0.05 * i, type: 'spring', stiffness: 200, damping: 20 }}
-                className="w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
-                style={{ color: 'var(--text-primary)' }}
-                onClick={onClose}
-              >
-                <item.icon size={18} style={{ color: 'var(--text-secondary)' }} />
-                {item.label}
-              </motion.button>
-            ))}
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.05, type: 'spring', stiffness: 200, damping: 20 }}
+              className="w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={onClose}
+            >
+              <User size={18} style={{ color: 'var(--text-secondary)' }} />
+              Профиль
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.1, type: 'spring', stiffness: 200, damping: 20 }}
+              className="w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={() => {
+                setIsSettingsOpen(true);
+                onClose();
+              }}
+            >
+              <GearSix size={18} style={{ color: 'var(--text-secondary)' }} />
+              Настройки
+            </motion.button>
+            <motion.button
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ delay: 0.15, type: 'spring', stiffness: 200, damping: 20 }}
+              className="w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
+              style={{ color: 'var(--text-primary)' }}
+              onClick={onClose}
+            >
+              <Question size={18} style={{ color: 'var(--text-secondary)' }} />
+              Помощь
+            </motion.button>
           </div>
 
           <div className="h-px mx-4" style={{ background: 'var(--border)' }} />
@@ -87,7 +123,10 @@ export default function ProfileDropdown({ isOpen, onClose }: Props) {
               transition={{ delay: 0.2, type: 'spring', stiffness: 200, damping: 20 }}
               className="w-full flex items-center gap-3 px-5 py-2.5 text-sm transition-colors hover:bg-[var(--bg-tertiary)]"
               style={{ color: 'var(--danger)' }}
-              onClick={onClose}
+              onClick={() => {
+                handleLogout();
+                onClose();
+              }}
             >
               <SignOut size={18} />
               Выйти
@@ -118,5 +157,6 @@ export default function ProfileDropdown({ isOpen, onClose }: Props) {
         </motion.div>
       )}
     </AnimatePresence>
+    </>
   );
 }

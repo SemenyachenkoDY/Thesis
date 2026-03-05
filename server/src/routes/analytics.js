@@ -5,35 +5,38 @@ const pool = require('../db');
 // GET /api/analytics/kpi
 router.get('/kpi', async (req, res) => {
   try {
-    const [sr, avg, dept, fail] = await Promise.all([
+    const [time, success, support, types] = await Promise.all([
+      // 1. Avg processing time by scenario
       pool.query(`
-        SELECT
-          COALESCE(ROUND(100.0 * SUM(CASE WHEN status='SIGNED' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 2), 0) AS success_rate,
-          COUNT(*) AS total
-        FROM documents
+        SELECT scenario, ROUND(AVG(processing_time_sec), 2) AS avg_time
+        FROM documents GROUP BY scenario
       `),
+      // 2. Success rate
       pool.query(`
-        SELECT COALESCE(ROUND(AVG(processing_time_sec), 2), 0) AS avg_time_sec
-        FROM documents WHERE processing_time_sec IS NOT NULL
+        SELECT d.scenario, 
+               ROUND(100.0 * SUM(CASE WHEN s.attempt_number = 1 AND s.status = 'SUCCESS' THEN 1 ELSE 0 END) / NULLIF(COUNT(d.id), 0), 2) AS rate
+        FROM documents d LEFT JOIN signatures s ON d.id = s.document_id GROUP BY d.scenario
       `),
+      // 3. Support requests
       pool.query(`
-        SELECT doc_type, COUNT(*) AS count
-        FROM documents GROUP BY doc_type ORDER BY count DESC
+        SELECT d.scenario, COUNT(sr.id) AS count
+        FROM documents d LEFT JOIN support_requests sr ON d.id = sr.document_id GROUP BY d.scenario
       `),
+      // 4. Distribution
       pool.query(`
-        SELECT COALESCE(ROUND(100.0 * SUM(CASE WHEN status='FAILED' THEN 1 ELSE 0 END) / NULLIF(COUNT(*),0), 2), 0) AS fail_rate
-        FROM documents
-      `),
+        SELECT doc_type, COUNT(*) AS count FROM documents GROUP BY doc_type
+      `)
     ]);
+
     res.json({
-      successRate: sr.rows[0],
-      avgProcessingTime: avg.rows[0],
-      byType: dept.rows,
-      failRate: fail.rows[0],
+      processingTime: time.rows,
+      successRates: success.rows,
+      supportTickets: support.rows,
+      docDistribution: types.rows
     });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ error: 'Failed to calculate KPI' });
+    res.status(500).json({ error: 'Failed' });
   }
 });
 

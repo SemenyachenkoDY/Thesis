@@ -3,30 +3,34 @@
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useCallback } from 'react';
 import { documents as mockDocs, DocumentItem } from '@/data/mockData';
-import { FileText, PencilSimple } from '@phosphor-icons/react';
+import { MagnifyingGlass, DownloadSimple, XCircle } from '@phosphor-icons/react';
 import SigningModal from './SigningModal';
+import DocumentViewerModal from './modals/DocumentViewerModal';
+
+const ITEMS_PER_PAGE = 5;
 
 export default function DocumentsTab() {
   const [docs, setDocs] = useState<DocumentItem[]>(mockDocs);
   const [filter, setFilter] = useState('Ожидают подписи');
+  const [search, setSearch] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
   const [signingDoc, setSigningDoc] = useState<DocumentItem | null>(null);
+  const [viewingDoc, setViewingDoc] = useState<DocumentItem | null>(null);
 
   const filters = ['Ожидают подписи', 'На исполнении', 'Все', 'Архив'];
 
   const filtered = docs.filter(d => {
-    if (filter === 'Ожидают подписи') return d.status === 'SIGNATURE_REQUESTED';
-    if (filter === 'На исполнении') return d.status === 'CREATED';
-    if (filter === 'Архив') return d.status === 'SIGNED' || d.status === 'EXPIRED';
-    return true;
+    const matchesSearch = d.title.toLowerCase().includes(search.toLowerCase());
+    let matchesFilter = true;
+    if (filter === 'Ожидают подписи') matchesFilter = d.status === 'SIGNATURE_REQUESTED';
+    if (filter === 'На исполнении') matchesFilter = d.status === 'CREATED';
+    if (filter === 'Архив') matchesFilter = d.status === 'SIGNED' || d.status === 'EXPIRED';
+    
+    return matchesSearch && matchesFilter;
   });
 
-  // Group by groupId
-  const groups = filtered.reduce((acc, doc) => {
-    const key = doc.groupId || doc.id;
-    if (!acc[key]) acc[key] = [];
-    acc[key].push(doc);
-    return acc;
-  }, {} as Record<string, DocumentItem[]>);
+  const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE) || 1;
+  const paginatedDocs = filtered.slice((currentPage - 1) * ITEMS_PER_PAGE, currentPage * ITEMS_PER_PAGE);
 
   const handleSign = useCallback((docId: string) => {
     setDocs(prev => prev.map(d => d.id === docId ? { ...d, status: 'SIGNED' as const, signedAt: new Date().toLocaleString('ru-RU') } : d));
@@ -34,96 +38,130 @@ export default function DocumentsTab() {
   }, []);
 
   return (
-    <div>
-      {/* Filters */}
-      <div className="flex flex-wrap gap-2 mb-5">
-        {filters.map(f => (
-          <motion.button
-            key={f}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setFilter(f)}
-            className="px-4 py-2 rounded-full text-sm font-medium transition-colors"
-            style={{
-              background: filter === f ? 'var(--accent)' : 'var(--bg-tertiary)',
-              color: filter === f ? 'white' : 'var(--text-secondary)',
-            }}
-          >
-            {f}
-            {f === 'Ожидают подписи' && (
-              <span className="ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold"
-                style={{ background: filter === f ? 'rgba(255,255,255,0.2)' : 'var(--accent)', color: 'white' }}
-              >
-                {docs.filter(d => d.status === 'SIGNATURE_REQUESTED').length}
-              </span>
-            )}
-          </motion.button>
-        ))}
+    <div className="bg-[var(--bg-elevated)] border border-[var(--border)] rounded-2xl p-6 shadow-sm">
+      
+      {/* Top Header: Tabs + Search */}
+      <div className="flex flex-col md:flex-row items-center justify-between mb-8 gap-4">
+        
+        {/* Pills / Sub-Tabs */}
+        <div className="flex bg-[var(--bg-secondary)] rounded-full p-1 border border-[var(--border)]">
+          {filters.map(f => (
+            <button
+              key={f}
+              onClick={() => { setFilter(f); setCurrentPage(1); }}
+              className={`px-5 py-2.5 rounded-full text-sm font-semibold transition-colors ${filter === f ? 'bg-[var(--bg-primary)] text-[var(--text-primary)] shadow-sm' : 'text-[var(--text-secondary)] hover:text-[var(--text-primary)]'}`}
+            >
+              {f === 'Ожидают подписи' ? 'Свежие подписи' : f}
+            </button>
+          ))}
+        </div>
+
+        {/* Search Input */}
+        <div className="flex items-center gap-2 px-4 py-2.5 rounded-full w-full md:w-72 bg-[var(--bg-secondary)] border border-[var(--border)] transition-colors focus-within:border-[var(--text-secondary)]">
+          <MagnifyingGlass size={18} style={{ color: 'var(--text-tertiary)' }} />
+          <input
+            type="text"
+            placeholder="Поиск"
+            value={search}
+            onChange={e => { setSearch(e.target.value); setCurrentPage(1); }}
+            className="bg-transparent outline-none flex-1 text-sm text-[var(--text-primary)] placeholder:text-[var(--text-tertiary)]"
+          />
+          {search && (
+            <button onClick={() => setSearch('')}>
+              <XCircle size={16} weight="fill" className="text-[var(--text-tertiary)] hover:text-[var(--text-primary)]" />
+            </button>
+          )}
+        </div>
       </div>
 
-      {/* Document Groups */}
-      <div className="flex flex-col gap-3">
-        {Object.entries(groups).map(([groupKey, groupDocs], gi) => (
-          <motion.div
-            key={groupKey}
-            initial={{ opacity: 0, y: 15 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: gi * 0.05, type: 'spring', stiffness: 120, damping: 20 }}
-            className="rounded-2xl overflow-hidden"
-            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)' }}
-          >
-            {groupDocs.length > 1 && (
-              <div className="px-5 py-3 flex items-center gap-2" style={{ borderBottom: '1px solid var(--border)' }}>
-                <span className="text-xs font-mono" style={{ color: 'var(--text-tertiary)' }}>
-                  Группа #{groupKey.slice(-6)} · {groupDocs.length} документа
-                </span>
-              </div>
-            )}
-            {groupDocs.map((doc, di) => (
-              <div
-                key={doc.id}
-                className="px-5 py-4 flex items-center justify-between transition-colors hover:bg-[var(--bg-tertiary)]"
-                style={{ borderTop: di > 0 ? '1px solid var(--border)' : 'none' }}
-              >
-                <div className="flex items-center gap-3 flex-1 min-w-0">
-                  <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                    style={{ background: 'var(--accent-muted)' }}
-                  >
-                    <FileText size={18} weight="duotone" style={{ color: 'var(--accent)' }} />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium truncate" style={{ color: 'var(--text-primary)' }}>{doc.title}</p>
-                    <p className="text-xs" style={{ color: 'var(--text-tertiary)' }}>
-                      {doc.createdAt}
-                      {doc.signedAt && <span className="ml-2 text-accent">✓ Подписан {doc.signedAt}</span>}
-                    </p>
-                  </div>
-                </div>
+      {/* Table Headers */}
+      <div className="grid grid-cols-[1fr_200px] gap-4 mb-4 px-4">
+        <span className="text-[10px] font-bold tracking-widest uppercase" style={{ color: 'var(--text-tertiary)' }}>Название документа</span>
+        <span className="text-[10px] font-bold tracking-widest uppercase text-right mr-10" style={{ color: 'var(--text-tertiary)' }}>Сформирован</span>
+      </div>
+
+      {/* List */}
+      <div className="flex flex-col mb-8 relative min-h-[300px]">
+        <AnimatePresence mode="popLayout">
+          {paginatedDocs.map((doc, idx) => (
+            <motion.div
+              key={doc.id}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              transition={{ delay: idx * 0.05 }}
+              className="grid grid-cols-[1fr_200px] gap-4 items-center px-4 py-5 border-t border-[var(--border)] hover:bg-[var(--bg-secondary)] transition-colors rounded-xl cursor-pointer group"
+              onClick={() => setViewingDoc(doc)}
+            >
+              <div className="flex flex-col gap-3">
+                <span className="text-[15px] font-medium" style={{ color: 'var(--text-primary)' }}>{doc.title}</span>
                 {doc.status === 'SIGNATURE_REQUESTED' && (
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setSigningDoc(doc)}
-                    className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium shrink-0 ml-3"
-                    style={{ background: 'var(--accent)', color: 'white' }}
+                  <button 
+                    onClick={(e) => { e.stopPropagation(); setSigningDoc(doc); }}
+                    className="w-min whitespace-nowrap px-5 py-2 rounded-full text-sm font-bold bg-white text-black shadow-md hover:bg-gray-100 transition-colors"
                   >
-                    <PencilSimple size={14} weight="bold" />
                     Подписать
-                  </motion.button>
+                  </button>
                 )}
                 {doc.status === 'SIGNED' && (
-                  <span className="text-xs font-medium px-3 py-1 rounded-full shrink-0 ml-3"
-                    style={{ background: 'var(--accent-muted)', color: 'var(--accent)' }}
-                  >✓ Подписан</span>
+                  <span className="w-min whitespace-nowrap text-xs font-bold px-3 py-1 rounded-full bg-[var(--accent-muted)] text-[var(--accent)]">
+                    Подписан
+                  </span>
                 )}
               </div>
-            ))}
-          </motion.div>
-        ))}
+              
+              <div className="flex items-center justify-end gap-6 text-right">
+                <div>
+                   <p className="text-[13px] font-medium" style={{ color: 'var(--text-secondary)' }}>{doc.createdAt.split(' ')[0]}</p>
+                   <p className="text-[12px]" style={{ color: 'var(--text-tertiary)' }}>в {doc.createdAt.split(' ')[1]}</p>
+                </div>
+                <button 
+                  onClick={(e) => { e.stopPropagation(); /* Fake download */ }}
+                  className="p-2 -mr-2 rounded-lg text-[var(--text-tertiary)] group-hover:text-[var(--text-primary)] hover:bg-[var(--bg-tertiary)] transition-all"
+                  title="Скачать документ"
+                >
+                  <DownloadSimple size={20} />
+                </button>
+              </div>
+            </motion.div>
+          ))}
+        </AnimatePresence>
+
+        {filtered.length === 0 && (
+          <div className="absolute inset-0 flex items-center justify-center">
+            <p className="text-[var(--text-tertiary)] font-medium">Ничего не найдено</p>
+          </div>
+        )}
       </div>
 
-      {filtered.length === 0 && (
-        <div className="text-center py-16" style={{ color: 'var(--text-tertiary)' }}>
-          <p className="text-sm">Нет документов в этой категории</p>
+      {/* Pagination */}
+      {totalPages > 1 && (
+        <div className="flex items-center justify-center gap-2 mt-4 pt-6 border-t border-[var(--border)]">
+          <button 
+            disabled={currentPage === 1}
+            onClick={() => setCurrentPage(p => p - 1)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] disabled:opacity-50 disabled:hover:bg-transparent"
+          >
+            &laquo;
+          </button>
+          
+          {[...Array(totalPages)].map((_, i) => (
+            <button
+              key={i}
+              onClick={() => setCurrentPage(i + 1)}
+              className={`w-8 h-8 flex items-center justify-center rounded-lg text-sm font-semibold transition-colors ${currentPage === i + 1 ? 'bg-[var(--bg-tertiary)] text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)]'}`}
+            >
+              {i + 1}
+            </button>
+          ))}
+
+          <button 
+            disabled={currentPage === totalPages}
+            onClick={() => setCurrentPage(p => p + 1)}
+            className="w-8 h-8 flex items-center justify-center rounded-lg text-[var(--text-secondary)] hover:bg-[var(--bg-secondary)] disabled:opacity-50 disabled:hover:bg-transparent"
+          >
+            &raquo;
+          </button>
         </div>
       )}
 
@@ -134,6 +172,17 @@ export default function DocumentsTab() {
             document={signingDoc}
             onClose={() => setSigningDoc(null)}
             onSign={() => handleSign(signingDoc.id)}
+          />
+        )}
+      </AnimatePresence>
+
+      {/* Document Viewer Modal */}
+      <AnimatePresence>
+        {viewingDoc && (
+          <DocumentViewerModal
+            document={viewingDoc}
+            isOpen={!!viewingDoc}
+            onClose={() => setViewingDoc(null)}
           />
         )}
       </AnimatePresence>
