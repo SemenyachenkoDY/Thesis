@@ -1,16 +1,3 @@
-"""
-Fast Sign — Генератор синтетических данных
-==========================================
-Генерирует реалистичные данные для ВКР и загружает их в PostgreSQL.
-
-Использование:
-  pip install psycopg2-binary faker
-  python generate_data.py
-
-Переменные окружения (или передайте аргументами):
-  DB_HOST, DB_PORT, DB_NAME, DB_USER, DB_PASSWORD
-"""
-
 import os
 import sys
 import uuid
@@ -34,7 +21,7 @@ except ImportError:
 
 fake = Faker('ru_RU')
 
-# ====== Конфигурация ======
+# Конфигурация 
 NUM_CLIENTS = 50
 NUM_DOCUMENTS_AS_IS = 200   # Сценарий AS_IS (без Fast Sign)
 NUM_DOCUMENTS_TO_BE = 300   # Сценарий TO_BE (с Fast Sign)
@@ -181,11 +168,12 @@ def generate_signatures(documents):
     return signatures
 
 
-def generate_events(documents, signatures):
+def generate_events(documents, signatures, clients):
     events = []
     for doc in documents:
         events.append({
             'id': str(uuid.uuid4()),
+            'client_id': doc['client_id'],
             'entity_id': doc['id'],
             'event_type': 'DocumentCreated',
             'payload': f'{{"doc_type":"{doc["doc_type"]}","scenario":"{doc["scenario"]}"}}',
@@ -194,6 +182,7 @@ def generate_events(documents, signatures):
         if doc['status'] in ('SIGNATURE_REQUESTED', 'SIGNED', 'FAILED'):
             events.append({
                 'id': str(uuid.uuid4()),
+                'client_id': doc['client_id'],
                 'entity_id': doc['id'],
                 'event_type': 'SignatureRequested',
                 'payload': f'{{"sign_type":"{doc["sign_type"]}"}}',
@@ -202,6 +191,7 @@ def generate_events(documents, signatures):
         if doc['status'] == 'SIGNED':
             events.append({
                 'id': str(uuid.uuid4()),
+                'client_id': doc['client_id'],
                 'entity_id': doc['id'],
                 'event_type': 'DocumentSigned',
                 'payload': f'{{"processing_time_sec":{doc["processing_time_sec"]},"attempts":{doc["attempts"]}}}',
@@ -210,6 +200,7 @@ def generate_events(documents, signatures):
         if doc['status'] == 'FAILED':
             events.append({
                 'id': str(uuid.uuid4()),
+                'client_id': doc['client_id'],
                 'entity_id': doc['id'],
                 'event_type': 'SignatureFailed',
                 'payload': f'{{"reason":"max_attempts","attempts":{doc["attempts"]}}}',
@@ -242,7 +233,7 @@ def generate_reports(clients):
     return reports
 
 
-def generate_corp_actions():
+def generate_corp_actions(clients):
     actions = []
     for _ in range(NUM_CORP_ACTIONS):
         action_type = random.choice(CORP_ACTION_TYPES)
@@ -251,6 +242,7 @@ def generate_corp_actions():
         title = f'({action_type}) О корпоративном действии с ценными бумагами эмитента {issuer} (ISIN {isin})'
         actions.append({
             'id': str(uuid.uuid4()),
+            'client_id': random.choice(clients)['id'],
             'title': title,
             'action_type': action_type,
             'status': random.choice(['NEW'] * 70 + ['PROCESSED'] * 30),
@@ -259,11 +251,12 @@ def generate_corp_actions():
     return actions
 
 
-def generate_margin_calls():
+def generate_margin_calls(clients):
     calls = []
     for _ in range(NUM_MARGIN_CALLS):
         calls.append({
             'id': str(uuid.uuid4()),
+            'client_id': random.choice(clients)['id'],
             'title': random.choice(MARGIN_CALL_TITLES),
             'created_at': random_date(),
         })
@@ -288,6 +281,21 @@ def generate_tax_records(clients):
     return records
 
 
+def generate_support_requests(documents):
+    requests = []
+    for doc in documents:
+        # Вероятность обращения: AS_IS (15%), TO_BE (3%)
+        chance = 0.15 if doc['scenario'] == 'AS_IS' else 0.03
+        if random.random() < chance:
+            requests.append({
+                'id': str(uuid.uuid4()),
+                'document_id': doc['id'],
+                'created_at': doc['created_at'] + timedelta(hours=random.randint(1, 48)),
+                'resolved': random.random() < 0.8,
+            })
+    return requests
+
+
 def insert_data(conn, table, columns, rows):
     """Batch insert using execute_values for performance"""
     if not rows:
@@ -298,7 +306,7 @@ def insert_data(conn, table, columns, rows):
     with conn.cursor() as cur:
         execute_values(cur, sql, values, template=template, page_size=500)
     conn.commit()
-    print(f"  ✓ {table}: {len(rows)} записей")
+    print(f"  [OK] {table}: {len(rows)} записей")
 
 
 def main():
@@ -324,10 +332,10 @@ def main():
     if args.clean:
         print("\n  Очистка таблиц...")
         with conn.cursor() as cur:
-            for t in ['events', 'signatures', 'margin_calls', 'corp_actions', 'tax_records', 'reports', 'documents', 'clients']:
+            for t in ['support_requests', 'events', 'signatures', 'margin_calls', 'corp_actions', 'tax_records', 'reports', 'documents', 'clients']:
                 cur.execute(f"DELETE FROM {t}")
         conn.commit()
-        print("  ✓ Очищено")
+        print("  [OK] Очищено")
 
     print("\n  Генерация данных...")
 
@@ -350,8 +358,8 @@ def main():
         signatures)
 
     # 4. Events
-    events = generate_events(all_docs, signatures)
-    insert_data(conn, 'events', ['id', 'entity_id', 'event_type', 'payload', 'created_at'], events)
+    events = generate_events(all_docs, signatures, clients)
+    insert_data(conn, 'events', ['id', 'client_id', 'entity_id', 'event_type', 'payload', 'created_at'], events)
 
     # 5. Reports
     reports = generate_reports(clients)
@@ -360,12 +368,12 @@ def main():
         reports)
 
     # 6. Corp Actions
-    corp_actions = generate_corp_actions()
-    insert_data(conn, 'corp_actions', ['id', 'title', 'action_type', 'status', 'created_at'], corp_actions)
+    corp_actions = generate_corp_actions(clients)
+    insert_data(conn, 'corp_actions', ['id', 'client_id', 'title', 'action_type', 'status', 'created_at'], corp_actions)
 
     # 7. Margin Calls
-    margin_calls = generate_margin_calls()
-    insert_data(conn, 'margin_calls', ['id', 'title', 'created_at'], margin_calls)
+    margin_calls = generate_margin_calls(clients)
+    insert_data(conn, 'margin_calls', ['id', 'client_id', 'title', 'created_at'], margin_calls)
 
     # 8. Tax Records
     tax_records = generate_tax_records(clients)
@@ -373,8 +381,12 @@ def main():
         ['id', 'client_id', 'tax_year', 'tax_base', 'to_pay', 'paid', 'created_at'],
         tax_records)
 
+    # 9. Support Requests
+    support_requests = generate_support_requests(all_docs)
+    insert_data(conn, 'support_requests', ['id', 'document_id', 'created_at', 'resolved'], support_requests)
+
     # Итоги
-    total = len(clients) + len(all_docs) + len(signatures) + len(events) + len(reports) + len(corp_actions) + len(margin_calls) + len(tax_records)
+    total = len(clients) + len(all_docs) + len(signatures) + len(events) + len(reports) + len(corp_actions) + len(margin_calls) + len(tax_records) + len(support_requests)
     print(f"\n{'='*50}")
     print(f"  Итого: {total} записей загружено!")
     print(f"  AS_IS документов: {len(docs_as_is)}")

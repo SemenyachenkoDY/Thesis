@@ -1,7 +1,3 @@
--- ============================================================
--- Fast Sign / ИнвестПорт — PostgreSQL Schema
--- ============================================================
-
 -- Клиенты
 CREATE TABLE IF NOT EXISTS clients (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -65,6 +61,7 @@ CREATE TABLE IF NOT EXISTS reports (
 -- Корпоративные действия
 CREATE TABLE IF NOT EXISTS corp_actions (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     action_type VARCHAR(20),
     isin VARCHAR(20),
@@ -76,6 +73,7 @@ CREATE TABLE IF NOT EXISTS corp_actions (
 -- Маржин-коллы
 CREATE TABLE IF NOT EXISTS margin_calls (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     title TEXT NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW()
 );
@@ -94,6 +92,7 @@ CREATE TABLE IF NOT EXISTS tax_records (
 -- События (Event-Driven Architecture)
 CREATE TABLE IF NOT EXISTS events (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    client_id UUID REFERENCES clients(id) ON DELETE SET NULL,
     entity_id UUID NOT NULL,
     event_type VARCHAR(50) NOT NULL,
     payload JSONB,
@@ -109,12 +108,15 @@ CREATE INDEX IF NOT EXISTS idx_documents_group ON documents(group_id);
 CREATE INDEX IF NOT EXISTS idx_signatures_doc ON signatures(document_id);
 CREATE INDEX IF NOT EXISTS idx_reports_status ON reports(status);
 CREATE INDEX IF NOT EXISTS idx_reports_client ON reports(client_id);
+CREATE INDEX IF NOT EXISTS idx_events_client ON events(client_id);
 CREATE INDEX IF NOT EXISTS idx_events_entity ON events(entity_id);
 CREATE INDEX IF NOT EXISTS idx_events_type ON events(event_type);
+CREATE INDEX IF NOT EXISTS idx_corp_actions_client ON corp_actions(client_id);
 CREATE INDEX IF NOT EXISTS idx_corp_actions_type ON corp_actions(action_type);
+CREATE INDEX IF NOT EXISTS idx_margin_calls_client ON margin_calls(client_id);
 CREATE INDEX IF NOT EXISTS idx_margin_calls_created ON margin_calls(created_at);
 
--- Обращения в поддержку (Table 5 в дипломе)
+-- Обращения в поддержку 
 CREATE TABLE IF NOT EXISTS support_requests (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     document_id UUID REFERENCES documents(id) ON DELETE CASCADE,

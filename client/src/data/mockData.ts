@@ -1,8 +1,3 @@
-// ============================================================
-// Fast Sign / ИнвестПорт — Mock Data
-// Fallback when backend is unavailable
-// ============================================================
-
 export const user = {
   name: 'Уткин Виталий Федорович',
   status: 'Квалифицированный инвестор',
@@ -51,7 +46,7 @@ export const products = [
   { title: 'S&P 500', description: 'Доступ к американскому рынку через фонд', tag: 'Новинка' },
 ];
 
-// ===== ДОКУМЕНТООБОРОТ =====
+//  ДОКУМЕНТООБОРОТ 
 
 export interface DocumentItem {
   id: string;
@@ -126,7 +121,7 @@ export const taxData = {
   paid: 1,
 };
 
-// ===== ANALYTICS (donut chart) =====
+//  ANALYTICS (donut chart) 
 export const analyticsComposition = [
   { name: 'Акции', value: 14.2, color: '#F59E0B' },
   { name: 'Акции (short)', value: 2.06, color: '#6366F1' },

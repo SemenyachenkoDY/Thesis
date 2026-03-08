@@ -1,7 +1,3 @@
--- ============================================================
--- Fast Sign / ИнвестПорт — Seed Data
--- ============================================================
-
 -- Клиент
 INSERT INTO clients (id, name, client_type, contract_number, has_kep) VALUES
   ('a1b2c3d4-e5f6-7890-abcd-ef1234567890', 'Уткин Виталий Федорович', 'PHYSICAL', 'BP76701', false);
